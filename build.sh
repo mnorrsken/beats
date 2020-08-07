@@ -1,27 +1,27 @@
 #!/bin/bash
 # GITHUB_TOKEN is required
 # PLATFORMS is required
+# temp dir shenanigans beacause of go mod making stuff readonly
 set -e
 PDIR=$(pwd)
-export GOPATH=${PDIR}/go
+TMPHOME=$(mktemp -d --suffix _beats)
+export GOPATH=${TMPHOME}/go
 export PATH=${PATH}:/usr/local/go/bin:${GOPATH}/bin
 UPLOAD=${PDIR}/upload-all.sh
 mkdir -p ${GOPATH}
 GOVER=$(go version)
-
-curl https://api.github.com/repos/elastic/beats/releases | jq '.[] | .tag_name' -r > es_tags.txt
-curl https://api.github.com/repos/mnorrsken/beats/releases | jq '.[] | .tag_name' -r > mn_tags.txt
+cd ${TMPHOME}
+curl https://api.github.com/repos/elastic/beats/releases | jq '.[] | .tag_name' -r | sort -n > es_tags.txt
+curl https://api.github.com/repos/mnorrsken/beats/releases | jq '.[] | .tag_name' -r | sort -n > mn_tags.txt
 build_tags=$(diff mn_tags.txt es_tags.txt | grep -E '^> v(7\.([8-9]|[1-9][0-9]+)\.|[89]\.)' | cut -c3- | sort -n)
 for tag in $build_tags; do
-    cd ${PDIR}
-    chmod -R +w beats || true
-    rm -rf beats || true
+    cd ${TMPHOME}
     git clone https://github.com/elastic/beats.git
-    cd ${PDIR}/beats
+    cd ${TMPHOME}/beats
     git checkout $tag
-    cd ${PDIR}/beats/filebeat
+    cd ${TMPHOME}/beats/filebeat
     make release
-    cd ${PDIR}/beats/metricbeat
+    cd ${TMPHOME}/beats/metricbeat
     make release
 
     github-release release \
@@ -31,7 +31,7 @@ for tag in $build_tags; do
         --name "Beats $tag" \
         --description "Built from beats https://github.com/elastic/beats/tree/$tag with $GOVER" \
 
-    cd ${PDIR}
-    $UPLOAD beats/filebeat/build/distributions $tag
-    $UPLOAD beats/metricbeat/build/distributions $tag
+    $UPLOAD ${TMPHOME}beats/filebeat/build/distributions $tag
+    $UPLOAD ${TMPHOME}beats/metricbeat/build/distributions $tag
 done
+rm -rf ${TMPHOME} || true
