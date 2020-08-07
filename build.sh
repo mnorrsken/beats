@@ -11,7 +11,7 @@ GOVER=$(go version)
 
 curl https://api.github.com/repos/elastic/beats/releases | jq '.[] | .tag_name' -r > es_tags.txt
 curl https://api.github.com/repos/mnorrsken/beats/releases | jq '.[] | .tag_name' -r > mn_tags.txt
-build_tags=$(diff mn_tags.txt es_tags.txt | grep -E '^> v(7\.8\.|[89]\.)' | cut -c3-)
+build_tags=$(diff mn_tags.txt es_tags.txt | grep -E '^> v(7\.([8-9]|[1-9][0-9]+)\.|[89]\.)' | cut -c3- | sort -n)
 for tag in $build_tags; do
     cd ${PDIR}
     chmod -R +w beats || true
