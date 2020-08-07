@@ -31,7 +31,7 @@ for tag in $build_tags; do
         --name "Beats $tag" \
         --description "Built from beats https://github.com/elastic/beats/tree/$tag with $GOVER" \
 
-    $UPLOAD ${TMPHOME}beats/filebeat/build/distributions $tag
-    $UPLOAD ${TMPHOME}beats/metricbeat/build/distributions $tag
+    $UPLOAD ${TMPHOME}/beats/filebeat/build/distributions $tag
+    $UPLOAD ${TMPHOME}/beats/metricbeat/build/distributions $tag
 done
-rm -rf ${TMPHOME} || true
+rm -rf ${TMPHOME} &> /dev/null || true
